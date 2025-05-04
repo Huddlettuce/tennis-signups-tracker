@@ -1,0 +1,165 @@
+/* General Styles */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    line-height: 1.6;
+    margin: 0; /* Remove default margin */
+    background-color: #f0f4f8; /* Lighter background */
+    color: #333;
+}
+
+#root {
+    min-height: 100vh;
+}
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Header Styles */
+header {
+    background: linear-gradient(to right, #006400, #2e8b57); /* Dark green gradient */
+    color: #fff;
+    padding: 2rem 1rem;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+header h1 {
+    margin: 0.5rem 0 0.2rem 0;
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+header p {
+    margin: 0;
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+/* Main Content Styles */
+main {
+    flex-grow: 1; /* Ensures main content pushes footer down */
+    display: flex;
+    justify-content: center;
+    align-items: center; /* Center the form vertically */
+    padding: 2rem 1rem;
+}
+
+.signup-section {
+    background: rgba(255, 255, 255, 0.9); /* Slightly transparent white background */
+    padding: 2rem 2.5rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    max-width: 500px;
+    width: 100%;
+    text-align: center;
+}
+
+.signup-section h2 {
+    color: #006400; /* Dark Green */
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+}
+
+/* Form Styles */
+.signup-form .form-group {
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.signup-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: #555;
+}
+
+.signup-form input[type="text"],
+.signup-form select {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    box-sizing: border-box; /* Include padding and border in element's total width/height */
+}
+
+.signup-form input:focus,
+.signup-form select:focus {
+    border-color: #2e8b57; /* Sea Green */
+    outline: none;
+    box-shadow: 0 0 5px rgba(46, 139, 87, 0.3);
+}
+
+.signup-form button {
+    background-color: #2e8b57; /* Sea Green */
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    width: 100%; /* Make button full width */
+    margin-top: 1rem;
+}
+
+.signup-form button:hover {
+    background-color: #006400; /* Dark Green */
+    transform: translateY(-1px);
+}
+
+.signup-form button:disabled {
+    background-color: #aaa;
+    cursor: not-allowed;
+}
+
+/* Submission Message Styles */
+.submit-message {
+    margin-top: 1.5rem;
+    padding: 0.8rem;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.submit-message.success {
+    background-color: #d4edda; /* Light green */
+    color: #155724; /* Dark green */
+    border: 1px solid #c3e6cb;
+}
+
+.submit-message.error {
+    background-color: #f8d7da; /* Light red */
+    color: #721c24; /* Dark red */
+    border: 1px solid #f5c6cb;
+}
+
+/* Footer Styles */
+footer {
+    text-align: center;
+    padding: 1rem;
+    background-color: #e2e8f0;
+    color: #555;
+    font-size: 0.9rem;
+    margin-top: auto; /* Pushes footer to bottom */
+}
+
+/* Remove old styles no longer needed */
+/* #signup-form label (inline-block), #signup-form inputs/select width calc, #participants, #participants li */
+/* Keep responsive adjustments if needed, but the new layout might handle it */
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 2rem;
+    }
+    .signup-section {
+        padding: 1.5rem;
+    }
+    .signup-section h2 {
+        font-size: 1.5rem;
+    }
+} 
