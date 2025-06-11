@@ -8,7 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/participants") // Base path for all endpoints in this controller
@@ -73,5 +75,22 @@ public class ParticipantController {
             logger.error("Unexpected error deleting participant with ID: {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+        }
+
+        @GetMapping("/count")
+    public ResponseEntity<Map<String, Object>> getParticipantCount(
+            @RequestParam String lessonType,
+            @RequestParam String lessonSession) {
+        try {
+            long count = participantService.countParticipantsByTypeAndSession(lessonType, lessonSession);
+            Map<String, Object> response = new HashMap<>();
+            response.put("count", count);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error counting participants for session/type: {} / {}", lessonSession, lessonType, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("error", "Failed to count participants."));
+        }
     }
+
 }

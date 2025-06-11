@@ -1,15 +1,40 @@
-const { useState } = React;
+const { useState, useEffect } = React;
 
 function App() {
     const [parentName, setParentName] = useState('');
     const [parentEmail, setParentEmail] = useState('');
     const [childName, setChildName] = useState('');
+    const [contact, setContact] = useState('');
     const [lessonType, setLessonType] = useState('');
     const [lessonSession, setLessonSession] = useState('');
-    const [contact, setContact] = useState('');
+    const [spotsRemaining, setSpotsRemaining] = useState(null);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitStatus, setSubmitStatus] = useState({ message: '', type: '' });
+
+    useEffect(() => {
+        async function fetchSpots() {
+            if (!lessonType || !lessonSession) {
+                setSpotsRemaining(null);
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/participants/count?lessonType=${encodeURIComponent(lessonType)}&lessonSession=${encodeURIComponent(lessonSession)}`);
+                const data = await res.json();
+                if (res.ok && typeof data.count === 'number') {
+                    setSpotsRemaining(12 - data.count);
+                } else {
+                    setSpotsRemaining(null);
+                }
+            } catch (error) {
+                console.error("Failed to fetch spot count:", error);
+                setSpotsRemaining(null);
+            }
+        }
+
+        fetchSpots();
+    }, [lessonType, lessonSession]);
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -18,13 +43,6 @@ function App() {
 
         if (!parentName || !parentEmail || !childName || !lessonType || !lessonSession) {
             setSubmitStatus({ message: 'Please fill in all required fields.', type: 'error' });
-            setIsSubmitting(false);
-            return;
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(parentEmail)) {
-            setSubmitStatus({ message: 'Please enter a valid email address.', type: 'error' });
             setIsSubmitting(false);
             return;
         }
@@ -41,24 +59,26 @@ function App() {
         try {
             const response = await fetch('/api/participants', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify(participantData),
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Server error');
+                const errorMessage = errorData.error || 'Server error';
+                throw new Error(errorMessage);
             }
 
             setSubmitStatus({ message: 'Sign-up successful! Thank you.', type: 'success' });
-
-            // Reset form
             setParentName('');
             setParentEmail('');
             setChildName('');
             setContact('');
             setLessonType('');
             setLessonSession('');
+            setSpotsRemaining(null);
         } catch (error) {
             console.error('Error adding participant:', error);
             setSubmitStatus({ message: `Failed to add participant: ${error.message}`, type: 'error' });
@@ -90,10 +110,10 @@ function App() {
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="parent-email">Parent Email:</label>
+                            <label htmlFor="email">Email Address:</label>
                             <input
                                 type="email"
-                                id="parent-email"
+                                id="email"
                                 value={parentEmail}
                                 onChange={(e) => setParentEmail(e.target.value)}
                                 required
@@ -151,15 +171,23 @@ function App() {
                             </select>
                         </div>
 
+                        {spotsRemaining !== null && (
+                            <p className="spots-remaining">
+                                {spotsRemaining > 0
+                                    ? `${spotsRemaining} spot${spotsRemaining === 1 ? '' : 's'} remaining`
+                                    : 'Session is full'}
+                            </p>
+                        )}
+
                         <div className="form-group">
-                            <label htmlFor="contact">Optional Phone (or Alt Contact):</label>
+                            <label htmlFor="contact">Optional Contact Info (Phone):</label>
                             <input
                                 type="text"
                                 id="contact"
                                 value={contact}
                                 onChange={(e) => setContact(e.target.value)}
                                 disabled={isSubmitting}
-                                placeholder="Phone number or other contact"
+                                placeholder="Optional for reminders"
                             />
                         </div>
 

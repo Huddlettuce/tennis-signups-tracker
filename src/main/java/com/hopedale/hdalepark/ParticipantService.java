@@ -80,4 +80,13 @@ public class ParticipantService {
             return false;
         }
     }
+    public long countParticipantsByTypeAndSession(String type, String session)
+        throws ExecutionException, InterruptedException {
+    ApiFuture<QuerySnapshot> future = dbFirestore.collection(COLLECTION_NAME)
+            .whereEqualTo("lessonType", type)
+            .whereEqualTo("lessonSession", session)
+            .get();
+    return future.get().size();
+}
+
 }
