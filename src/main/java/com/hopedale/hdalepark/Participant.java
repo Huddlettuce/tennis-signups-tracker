@@ -10,6 +10,7 @@ public class Participant {
     private String name;
     private String lessonType;
     private String contact;
+    private String lessonSession;
 
     // --- Constructors ---
 
@@ -21,6 +22,7 @@ public class Participant {
         this.name = name;
         this.lessonType = lessonType;
         this.contact = contact;
+        this.lessonSession = lessonSession;
     }
 
     // --- Getters and Setters ---
@@ -56,6 +58,13 @@ public class Participant {
     public void setContact(String contact) {
         this.contact = contact;
     }
+    public String getLessonSession() {
+        return lessonSession;
+    }
+    public void setLessonSession(String lessonSession) {
+        this.lessonSession = lessonSession;
+    }
+    
 
     // --- (Optional) toString, equals, hashCode ---
     @Override
@@ -65,6 +74,8 @@ public class Participant {
                ", name='" + name + '\'' +
                ", lessonType='" + lessonType + '\'' +
                ", contact='" + contact + '\'' +
+                ", lessonSession='" + lessonSession +
+                '\'' +
                '}';
     }
 } 
