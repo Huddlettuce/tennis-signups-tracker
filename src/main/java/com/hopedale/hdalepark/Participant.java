@@ -1,31 +1,25 @@
 package com.hopedale.hdalepark;
 
-// Remove JPA imports
-// import jakarta.persistence.*;
-
-// Remove JPA annotations like @Entity, @Table, @Id, @GeneratedValue, @Column
 public class Participant {
 
     private String id; // Firestore uses String IDs
-    private String name;
+    private String parentName;
+    private String parentEmail;
+    private String childName;
     private String lessonType;
-    private String contact;
     private String lessonSession;
+    private String contact;
 
-    // --- Constructors ---
+    // Default constructor required for Firestore
+    public Participant() {}
 
-    // Default constructor needed for Firestore deserialization
-    public Participant() {
-    }
-
-    public Participant(String name, String lessonType, String contact) {
-        this.name = name;
+    public Participant(String parentName, String parentEmail, String childName, String lessonType, String lessonSession) {
+        this.parentName = parentName;
+        this.parentEmail = parentEmail;
+        this.childName = childName;
         this.lessonType = lessonType;
-        this.contact = contact;
         this.lessonSession = lessonSession;
     }
-
-    // --- Getters and Setters ---
 
     public String getId() {
         return id;
@@ -34,13 +28,35 @@ public class Participant {
     public void setId(String id) {
         this.id = id;
     }
-
-    public String getName() {
-        return name;
+    
+    public String getContact() {
+        return contact;
+    }
+    public void setContact(String contact) {
+        this.contact = contact;
+    }
+    public String getParentName() {
+        return parentName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setParentName(String parentName) {
+        this.parentName = parentName;
+    }
+
+    public String getParentEmail() {
+        return parentEmail;
+    }
+
+    public void setParentEmail(String parentEmail) {
+        this.parentEmail = parentEmail;
+    }
+
+    public String getChildName() {
+        return childName;
+    }
+
+    public void setChildName(String childName) {
+        this.childName = childName;
     }
 
     public String getLessonType() {
@@ -51,31 +67,23 @@ public class Participant {
         this.lessonType = lessonType;
     }
 
-    public String getContact() {
-        return contact;
-    }
-
-    public void setContact(String contact) {
-        this.contact = contact;
-    }
     public String getLessonSession() {
         return lessonSession;
     }
+
     public void setLessonSession(String lessonSession) {
         this.lessonSession = lessonSession;
     }
-    
 
-    // --- (Optional) toString, equals, hashCode ---
     @Override
     public String toString() {
         return "Participant{" +
-               "id='" + id + '\'' + // Updated for String id
-               ", name='" + name + '\'' +
-               ", lessonType='" + lessonType + '\'' +
-               ", contact='" + contact + '\'' +
-                ", lessonSession='" + lessonSession +
-                '\'' +
-               '}';
+                "id='" + id + '\'' +
+                ", parentName='" + parentName + '\'' +
+                ", parentEmail='" + parentEmail + '\'' +
+                ", childName='" + childName + '\'' +
+                ", lessonType='" + lessonType + '\'' +
+                ", lessonSession='" + lessonSession + '\'' +
+                '}';
     }
-} 
+}

@@ -7,8 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 @Service
@@ -22,24 +21,50 @@ public class ParticipantService {
 
     public List<Participant> getAllParticipants() throws ExecutionException, InterruptedException {
         List<Participant> participantsList = new ArrayList<>();
-        // Order by name ascending
-        ApiFuture<QuerySnapshot> future = dbFirestore.collection(COLLECTION_NAME).orderBy("name", Query.Direction.ASCENDING).get();
+
+        ApiFuture<QuerySnapshot> future = dbFirestore.collection(COLLECTION_NAME)
+                .orderBy("parentName", Query.Direction.ASCENDING)
+                .get();
+
         List<QueryDocumentSnapshot> documents = future.get().getDocuments();
         for (QueryDocumentSnapshot document : documents) {
             Participant participant = document.toObject(Participant.class);
-            participant.setId(document.getId()); // Set the document ID
+            participant.setId(document.getId());
             participantsList.add(participant);
         }
+
         logger.info("Retrieved {} participants from Firestore.", participantsList.size());
         return participantsList;
     }
 
     public Participant addParticipant(Participant participant) throws ExecutionException, InterruptedException {
-        // Firestore automatically generates an ID if one isn't provided
-        ApiFuture<DocumentReference> future = dbFirestore.collection(COLLECTION_NAME).add(participant);
-        DocumentReference addedDocRef = future.get();
-        participant.setId(addedDocRef.getId()); // Set the generated ID back on the object
-        logger.info("Added participant with ID: {}", participant.getId());
+        String session = participant.getLessonSession();
+
+        ApiFuture<QuerySnapshot> future = dbFirestore.collection(COLLECTION_NAME)
+                .whereEqualTo("lessonSession", session)
+                .get();
+
+        List<QueryDocumentSnapshot> existingParticipants = future.get().getDocuments();
+
+        if (existingParticipants.size() >= 12) {
+            throw new IllegalStateException("This session is full. Maximum capacity reached.");
+        }
+
+        // Build the Firestore document manually to avoid mismatches
+        Map<String, Object> docData = new HashMap<>();
+        docData.put("parentName", participant.getParentName());
+        docData.put("parentEmail", participant.getParentEmail());
+        docData.put("childName", participant.getChildName());
+        docData.put("contact", participant.getContact());
+        docData.put("lessonType", participant.getLessonType());
+        docData.put("lessonSession", participant.getLessonSession());
+
+        ApiFuture<DocumentReference> addedDoc = dbFirestore.collection(COLLECTION_NAME).add(docData);
+        DocumentReference addedDocRef = addedDoc.get();
+        participant.setId(addedDocRef.getId());
+
+        logger.info("Added participant to session '{}', ID: {}", session, participant.getId());
+
         return participant;
     }
 
@@ -47,14 +72,12 @@ public class ParticipantService {
         try {
             logger.info("Attempting to delete participant with ID: {}", id);
             ApiFuture<WriteResult> writeResult = dbFirestore.collection(COLLECTION_NAME).document(id).delete();
-            // delete() doesn't throw an error if the document doesn't exist.
-            // We can check the result or just assume success if no exception.
-            writeResult.get(); // Wait for operation to complete
+            writeResult.get(); // Block until deletion completes
             logger.info("Successfully deleted participant with ID: {} (or it didn't exist).", id);
-            return true; // Indicate success (or non-existence)
+            return true;
         } catch (Exception e) {
             logger.error("Error deleting participant with ID: {}", id, e);
-            return false; // Indicate failure
+            return false;
         }
     }
-} 
+}

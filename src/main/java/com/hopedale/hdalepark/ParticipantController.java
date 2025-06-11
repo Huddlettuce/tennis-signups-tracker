@@ -35,20 +35,27 @@ public class ParticipantController {
     // POST /api/participants - Adds a new participant
     @PostMapping
     public ResponseEntity<?> addParticipant(@RequestBody Participant participant) {
-        // Basic validation (could be more sophisticated)
-        if (participant.getName() == null || participant.getName().trim().isEmpty() ||
-            participant.getLessonType() == null || participant.getLessonType().trim().isEmpty()) {
-            // Return a proper error response object
-            return ResponseEntity.badRequest().body("{\"error\": \"Name and Lesson Type are required\"}");
-        }
+       if (participant.getParentName() == null || participant.getParentName().trim().isEmpty() ||
+            participant.getChildName() == null || participant.getChildName().trim().isEmpty() ||
+            participant.getLessonSession() == null || participant.getLessonSession().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("{\"error\": \"Parent name, child name, and session are required\"}");
+}
+
+
         try {
             Participant savedParticipant = participantService.addParticipant(participant);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedParticipant);
+        } catch (IllegalStateException e) {
+            // Handle full session
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("{\"error\": \"" + e.getMessage() + "\"}");
         } catch (Exception e) {
             logger.error("Error adding participant to Firestore", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"error\": \"Failed to save participant\"}");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"error\": \"Failed to save participant\"}");
         }
     }
+
 
     // DELETE /api/participants/{id} - Deletes a participant by ID (ID is now String)
     @DeleteMapping("/{id}")
@@ -67,4 +74,4 @@ public class ParticipantController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-} 
+}

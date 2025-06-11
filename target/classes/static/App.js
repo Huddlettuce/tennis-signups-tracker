@@ -1,107 +1,165 @@
-// Use React hooks for state and effects
-const { useState, useEffect } = React;
+const { useState } = React;
 
 function App() {
-    // State for form inputs
-    const [name, setName] = useState('');
+    const [parentName, setParentName] = useState('');
+    const [parentEmail, setParentEmail] = useState('');
+    const [childName, setChildName] = useState('');
     const [lessonType, setLessonType] = useState('');
+    const [lessonSession, setLessonSession] = useState('');
     const [contact, setContact] = useState('');
 
-    // State for submission status/feedback
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [submitStatus, setSubmitStatus] = useState({ message: '', type: '' }); // type: 'success' or 'error'
+    const [submitStatus, setSubmitStatus] = useState({ message: '', type: '' });
 
     const handleSubmit = async (event) => {
         event.preventDefault();
         setIsSubmitting(true);
-        setSubmitStatus({ message: '', type: '' }); // Clear previous status
+        setSubmitStatus({ message: '', type: '' });
 
-        if (!name || !lessonType) {
-            setSubmitStatus({ message: 'Please fill in Name and Lesson Type.', type: 'error' });
+        if (!parentName || !parentEmail || !childName || !lessonType || !lessonSession) {
+            setSubmitStatus({ message: 'Please fill in all required fields.', type: 'error' });
+            setIsSubmitting(false);
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(parentEmail)) {
+            setSubmitStatus({ message: 'Please enter a valid email address.', type: 'error' });
             setIsSubmitting(false);
             return;
         }
 
         const participantData = {
-            name: name,
-            lessonType: lessonType,
-            contact: contact
+            parentName,
+            parentEmail,
+            childName,
+            contact,
+            lessonType,
+            lessonSession
         };
 
         try {
             const response = await fetch('/api/participants', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(participantData),
             });
 
             if (!response.ok) {
-                const errorText = response.statusText || `Server error (Status: ${response.status})`;
-                throw new Error(errorText);
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Server error');
             }
 
-            // Success
             setSubmitStatus({ message: 'Sign-up successful! Thank you.', type: 'success' });
-            // Clear form
-            setName('');
-            setLessonType('');
-            setContact('');
 
+            // Reset form
+            setParentName('');
+            setParentEmail('');
+            setChildName('');
+            setContact('');
+            setLessonType('');
+            setLessonSession('');
         } catch (error) {
             console.error('Error adding participant:', error);
-            setSubmitStatus({ message: `Failed to add participant: ${error.message}. Please try again.`, type: 'error' });
+            setSubmitStatus({ message: `Failed to add participant: ${error.message}`, type: 'error' });
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    // Simple JSX structure for the form
     return (
-        <div className="app-container"> {/* Added container for potential background image */} 
+        <div className="app-container">
             <header>
                 <h1>Hopedale Parks Tennis Lessons</h1>
-                <p>Sign up for Adult & Child Sessions</p>
+                <p>Sign up for Youth Sessions</p>
             </header>
             <main>
                 <section className="signup-section">
                     <h2>Sign Up Now!</h2>
                     <form onSubmit={handleSubmit} className="signup-form">
                         <div className="form-group">
-                            <label htmlFor="name">Full Name:</label>
+                            <label htmlFor="parent-name">Parent Name:</label>
                             <input
                                 type="text"
-                                id="name"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
+                                id="parent-name"
+                                value={parentName}
+                                onChange={(e) => setParentName(e.target.value)}
                                 required
                                 disabled={isSubmitting}
                             />
                         </div>
+
+                        <div className="form-group">
+                            <label htmlFor="parent-email">Parent Email:</label>
+                            <input
+                                type="email"
+                                id="parent-email"
+                                value={parentEmail}
+                                onChange={(e) => setParentEmail(e.target.value)}
+                                required
+                                disabled={isSubmitting}
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="child-name">Child Name:</label>
+                            <input
+                                type="text"
+                                id="child-name"
+                                value={childName}
+                                onChange={(e) => setChildName(e.target.value)}
+                                required
+                                disabled={isSubmitting}
+                            />
+                        </div>
+
                         <div className="form-group">
                             <label htmlFor="lesson-type">Lesson Type:</label>
                             <select
                                 id="lesson-type"
                                 value={lessonType}
-                                onChange={(e) => setLessonType(e.target.value)}
+                                onChange={(e) => {
+                                    setLessonType(e.target.value);
+                                    if (e.target.value === "Introduction" && lessonSession === "Session 3") {
+                                        setLessonSession('');
+                                    }
+                                }}
                                 required
                                 disabled={isSubmitting}
                             >
                                 <option value="" disabled>-- Select Type --</option>
-                                <option value="adult">Adult</option>
-                                <option value="child">Child</option>
+                                <option value="Introduction">Introduction</option>
+                                <option value="Beginner">Beginner</option>
+                                <option value="Intermediate">Intermediate</option>
+                                <option value="Advanced">Advanced</option>
                             </select>
                         </div>
+
                         <div className="form-group">
-                            <label htmlFor="contact">Contact Info (Email/Phone):</label>
+                            <label htmlFor="lesson-session">Lesson Session:</label>
+                            <select
+                                id="lesson-session"
+                                value={lessonSession}
+                                onChange={(e) => setLessonSession(e.target.value)}
+                                required
+                                disabled={isSubmitting}
+                            >
+                                <option value="" disabled>-- Select Session --</option>
+                                <option value="Session 1">Session 1</option>
+                                <option value="Session 2">Session 2</option>
+                                {lessonType !== "Introduction" && <option value="Session 3">Session 3</option>}
+                            </select>
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="contact">Optional Phone (or Alt Contact):</label>
                             <input
                                 type="text"
                                 id="contact"
                                 value={contact}
                                 onChange={(e) => setContact(e.target.value)}
                                 disabled={isSubmitting}
-                                placeholder="Optional, for reminders/updates"
+                                placeholder="Phone number or other contact"
                             />
                         </div>
 
@@ -124,6 +182,5 @@ function App() {
     );
 }
 
-// Mount the App component to the DOM
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />); 
+root.render(<App />);
