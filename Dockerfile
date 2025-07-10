@@ -1,14 +1,16 @@
-# Use lightweight Java 17 runtime
-FROM eclipse-temurin:17-jdk
-
-# Set the working directory
+# Use an official Maven image to build the app
+FROM maven:3.8.6-eclipse-temurin-17 AS build
 WORKDIR /app
+COPY . .
+RUN mvn clean package -DskipTests
 
-# Copy the jar file into the container
-COPY target/hdalepark-0.0.1-SNAPSHOT.jar app.jar
+# Use a lightweight Java runtime image for deployment
+FROM eclipse-temurin:17-jdk
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
 
-# Expose the port Spring Boot runs on
+# Expose port 8080 (or change if needed)
 EXPOSE 8080
 
-# Command to run the jar
+# Run the jar file
 ENTRYPOINT ["java", "-jar", "app.jar"]
