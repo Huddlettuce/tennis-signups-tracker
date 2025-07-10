@@ -1,0 +1,9 @@
+# Created by venv; see https://docs.python.org/3/library/venv.html
+*
+# but allow these files
+!*/
+!.gitignore
+!Dockerfile
+!README.md
+!pom.xml
+!src/
