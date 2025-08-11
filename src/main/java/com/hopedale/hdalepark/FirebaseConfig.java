@@ -10,56 +10,74 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.StringUtils;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 @Configuration
 public class FirebaseConfig {
 
-    private static final Logger logger = LoggerFactory.getLogger(FirebaseConfig.class);
+    private static final Logger log = LoggerFactory.getLogger(FirebaseConfig.class);
 
-    // Keep this for local dev only. On Render we’ll use GOOGLE_APPLICATION_CREDENTIALS.
+    private static final String ENV_JSON  = "GOOGLE_APPLICATION_CREDENTIALS_JSON"; // raw JSON
+    private static final String ENV_PATH  = "GOOGLE_APPLICATION_CREDENTIALS";      // file path
+
+    // Optional local/property fallback
     @Value("${app.firebase.service-account-key-path:}")
     private String serviceAccountKeyPath;
 
     @Bean
-    public FirebaseApp firebaseApp() throws IOException {
+    public FirebaseApp firebaseApp() throws Exception {
         if (!FirebaseApp.getApps().isEmpty()) {
-            logger.info("Using already initialized FirebaseApp instance.");
+            log.info("Using existing FirebaseApp instance.");
             return FirebaseApp.getInstance();
         }
 
-        // Prefer GOOGLE_APPLICATION_CREDENTIALS (Render path we set at runtime)
-        String gac = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
-
-        if (gac != null && !gac.isBlank()) {
-            logger.info("Initializing Firebase via GOOGLE_APPLICATION_CREDENTIALS at: {}", gac);
-            try (InputStream in = new FileInputStream(gac)) {
-                FirebaseOptions options = FirebaseOptions.builder()
-                        .setCredentials(GoogleCredentials.fromStream(in))
-                        .build();
-                return FirebaseApp.initializeApp(options);
+        // 1) Prefer raw JSON from env var (Render-friendly)
+        String json = System.getenv(ENV_JSON);
+        if (StringUtils.hasText(json)) {
+            log.info("Initializing Firebase from {}", ENV_JSON);
+            try (InputStream is = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8))) {
+                GoogleCredentials creds = GoogleCredentials.fromStream(is);
+                FirebaseOptions opts = FirebaseOptions.builder().setCredentials(creds).build();
+                return FirebaseApp.initializeApp(opts);
             }
         }
 
-        // Fallback: local path from application.properties (for local dev)
-        if (serviceAccountKeyPath != null && !serviceAccountKeyPath.isBlank()) {
-            logger.info("Initializing Firebase via local file path: {}", serviceAccountKeyPath);
-            try (InputStream in = new FileInputStream(serviceAccountKeyPath)) {
-                FirebaseOptions options = FirebaseOptions.builder()
-                        .setCredentials(GoogleCredentials.fromStream(in))
-                        .build();
-                return FirebaseApp.initializeApp(options);
+        // 2) Otherwise, a file path via standard Google env var
+        String envPath = System.getenv(ENV_PATH);
+        if (StringUtils.hasText(envPath)) {
+            log.info("Initializing Firebase from {} (file path).", ENV_PATH);
+            try (InputStream is = new FileInputStream(envPath)) {
+                GoogleCredentials creds = GoogleCredentials.fromStream(is);
+                FirebaseOptions opts = FirebaseOptions.builder().setCredentials(creds).build();
+                return FirebaseApp.initializeApp(opts);
             }
         }
 
-        throw new IllegalStateException(
-                "No Firebase credentials found. Set GOOGLE_APPLICATION_CREDENTIALS (Render) or configure app.firebase.service-account-key-path (local).");
+        // 3) Or a file path from Spring property
+        if (StringUtils.hasText(serviceAccountKeyPath)) {
+            log.info("Initializing Firebase from app.firebase.service-account-key-path: {}", serviceAccountKeyPath);
+            try (InputStream is = new FileInputStream(serviceAccountKeyPath)) {
+                GoogleCredentials creds = GoogleCredentials.fromStream(is);
+                FirebaseOptions opts = FirebaseOptions.builder().setCredentials(creds).build();
+                return FirebaseApp.initializeApp(opts);
+            }
+        }
+
+        // 4) Last resort: ADC (works on GCP, some CI/CDs)
+        log.info("No explicit credentials provided. Trying Application Default Credentials.");
+        GoogleCredentials creds = GoogleCredentials.getApplicationDefault();
+        FirebaseOptions opts = FirebaseOptions.builder().setCredentials(creds).build();
+        return FirebaseApp.initializeApp(opts);
     }
 
     @Bean
-    public Firestore getFirestore(FirebaseApp firebaseApp) {
-        logger.info("Creating Firestore bean.");
-        return FirestoreClient.getFirestore(firebaseApp);
+    public Firestore getFirestore(FirebaseApp app) {
+        log.info("Creating Firestore bean.");
+        return FirestoreClient.getFirestore(app);
     }
 }
