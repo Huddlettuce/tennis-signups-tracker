@@ -7,16 +7,20 @@ import com.google.firebase.cloud.FirestoreClient;
 import com.google.cloud.firestore.Firestore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.io.*;
-import java.util.Base64;
 
 @Configuration
 public class FirebaseConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(FirebaseConfig.class);
+
+    // Keep this for local dev only. On Render we’ll use GOOGLE_APPLICATION_CREDENTIALS.
+    @Value("${app.firebase.service-account-key-path:}")
+    private String serviceAccountKeyPath;
 
     @Bean
     public FirebaseApp firebaseApp() throws IOException {
@@ -25,27 +29,32 @@ public class FirebaseConfig {
             return FirebaseApp.getInstance();
         }
 
-        String base64Config = System.getenv("FIREBASE_CONFIG_B64");
-        if (base64Config == null || base64Config.isEmpty()) {
-            throw new IOException("FIREBASE_CONFIG_B64 environment variable is missing or empty.");
+        // Prefer GOOGLE_APPLICATION_CREDENTIALS (Render path we set at runtime)
+        String gac = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
+
+        if (gac != null && !gac.isBlank()) {
+            logger.info("Initializing Firebase via GOOGLE_APPLICATION_CREDENTIALS at: {}", gac);
+            try (InputStream in = new FileInputStream(gac)) {
+                FirebaseOptions options = FirebaseOptions.builder()
+                        .setCredentials(GoogleCredentials.fromStream(in))
+                        .build();
+                return FirebaseApp.initializeApp(options);
+            }
         }
 
-        logger.info("Decoding Firebase service account from FIREBASE_CONFIG_B64...");
-
-        byte[] decodedBytes = Base64.getDecoder().decode(base64Config);
-        File tempFile = File.createTempFile("firebase-service", ".json");
-        try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-            fos.write(decodedBytes);
+        // Fallback: local path from application.properties (for local dev)
+        if (serviceAccountKeyPath != null && !serviceAccountKeyPath.isBlank()) {
+            logger.info("Initializing Firebase via local file path: {}", serviceAccountKeyPath);
+            try (InputStream in = new FileInputStream(serviceAccountKeyPath)) {
+                FirebaseOptions options = FirebaseOptions.builder()
+                        .setCredentials(GoogleCredentials.fromStream(in))
+                        .build();
+                return FirebaseApp.initializeApp(options);
+            }
         }
 
-        try (FileInputStream serviceAccount = new FileInputStream(tempFile)) {
-            FirebaseOptions options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                    .build();
-
-            logger.info("Initializing FirebaseApp with decoded service account.");
-            return FirebaseApp.initializeApp(options);
-        }
+        throw new IllegalStateException(
+                "No Firebase credentials found. Set GOOGLE_APPLICATION_CREDENTIALS (Render) or configure app.firebase.service-account-key-path (local).");
     }
 
     @Bean
