@@ -9,8 +9,9 @@ FROM eclipse-temurin:17-jdk
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
-# Expose port 8080 (or change if needed)
+# Expose port 8080
 EXPOSE 8080
 
-# Run the jar file
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Decode the Firebase key from the environment variable
+CMD echo "$FIREBASE_KEY_BASE64" | base64 -d > /app/firebase-service-account-key.json && \
+    java -jar app.jar
